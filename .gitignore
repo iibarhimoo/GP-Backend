@@ -9,8 +9,17 @@ local_settings.py
 db.sqlite3
 media
 staticfiles
+serviceAccountKey.json
 
 # Environments
 .env
 venv/
 env/
+.venv/
+.idea/
+
+# OS-specific files
+.DS_Store
+
+# IDE settings
+.vscode/
