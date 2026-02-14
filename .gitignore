@@ -23,3 +23,6 @@ env/
 
 # IDE settings
 .vscode/
+
+#Other
+get_token.py
