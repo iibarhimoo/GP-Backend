@@ -36,19 +36,15 @@ class CustomUserManager(BaseUserManager):
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
-        
-        # Default role for admin (optional, creates it if missing)
-        # admin_role, _ = Role.objects.get_or_create(role_name='Admin')
-        # extra_fields.setdefault('role', admin_role)
 
         return self.create_user(email, password, **extra_fields)
 
-# 4. USERS TABLE (Matches your Diagram)
+# 4. USERS TABLE
 class User(AbstractBaseUser, PermissionsMixin):
-    # Diagram Fields
-    first_name = models.CharField(max_length=50)
+    # Diagram Fields - FIXED: Made optional so the /sync endpoint doesn't crash
+    first_name = models.CharField(max_length=50, blank=True, null=True)
     middle_name = models.CharField(max_length=50, blank=True, null=True)
-    last_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50, blank=True, null=True)
     email = models.EmailField(unique=True, max_length=100)
     
     # The 'has' relationship (Foreign Key to Role)
@@ -65,7 +61,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = CustomUserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name', 'last_name']
+    # FIXED: Removed name fields so createsuperuser works smoothly
+    REQUIRED_FIELDS = []
 
     def __str__(self):
         return self.email

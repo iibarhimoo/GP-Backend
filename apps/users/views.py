@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import get_user_model
 from .authentication import verify_firebase_token
+from .models import Role # FIXED: Imported Role for default assignment
 
 User = get_user_model()
 
@@ -17,7 +18,6 @@ class UserSyncView(APIView):
 
     def post(self, request):
         try:
-            
             decoded_token = verify_firebase_token(request)
             if not decoded_token:
                 return Response({"error": "Invalid token payload"}, status=401)
@@ -33,8 +33,15 @@ class UserSyncView(APIView):
             defaults={'email': email, 'is_active': True}
         )
 
+        # FIXED: Assign default role to new users
+        if created:
+            patient_role, _ = Role.objects.get_or_create(role_name='Patient')
+            user.role = patient_role
+            user.save()
+
         return Response({
             "status": "success",
             "local_id": user.id,
+            "role": user.role.role_name if user.role else None,
             "created": created
         }, status=status.HTTP_200_OK)

@@ -19,15 +19,15 @@ INSTALLED_APPS = [
     'corsheaders',
 
     # Local Apps
-    'apps.users',
-    'apps.profiles',
+    'apps.users.apps.UsersConfig',
+    'apps.profiles.apps.ProfilesConfig',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware', # CORS before Common
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -67,21 +67,6 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     )
 }
-
-# Firebase Initialization
-import firebase_admin
-from firebase_admin import credentials
-
-if not firebase_admin._apps:
-    cred_path = os.path.join(BASE_DIR, 'serviceAccountKey.json')
-    try:
-        if os.path.exists(cred_path):
-            cred = credentials.Certificate(cred_path)
-            firebase_admin.initialize_app(cred)
-        else:
-            print("WARNING: serviceAccountKey.json not found. Firebase Auth will fail.")
-    except Exception as e:
-        print(f"ERROR: Failed to initialize Firebase: {e}")
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
