@@ -1,9 +1,10 @@
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from firebase_admin import auth
+from firebase_admin.auth import InvalidIdTokenError, ExpiredIdTokenError, RevokedIdTokenError
 from django.contrib.auth import get_user_model
 
-# 🛑 CRITICAL FIX: Always get the custom User model dynamically
+# Always get the custom User model dynamically
 User = get_user_model()
 
 def verify_firebase_token(request):
@@ -25,16 +26,24 @@ def verify_firebase_token(request):
     token = parts[1]
 
     try:
-        decoded_token = auth.verify_id_token(token)
+        # check_revoked=True forces a check to ensure the user hasn't been disabled in Firebase
+        decoded_token = auth.verify_id_token(token, check_revoked=True)
         return decoded_token
+        
+    except ExpiredIdTokenError:
+        raise AuthenticationFailed("FIREBASE_TOKEN_EXPIRED: Please request a new token.")
+    except RevokedIdTokenError:
+        raise AuthenticationFailed("FIREBASE_TOKEN_REVOKED: User session terminated.")
+    except InvalidIdTokenError:
+        raise AuthenticationFailed("FIREBASE_TOKEN_INVALID: Invalid token payload.")
     except Exception as e:
-        raise AuthenticationFailed(f"Invalid Firebase token: {str(e)}")
+        raise AuthenticationFailed(f"Authentication error: {str(e)}")
 
 
 class FirebaseAuthentication(BaseAuthentication):
     """
-    Django REST Framework Authentication Class.
-    Used automatically by 'IsAuthenticated' permissions on protected views.
+    Standard DRF Authentication Class for protected views.
+    Requires the user to be valid in Firebase AND exist in the local MySQL database.
     """
     def authenticate(self, request):
         # 1. Use your helper function! If the header is missing, 
@@ -42,7 +51,7 @@ class FirebaseAuthentication(BaseAuthentication):
         decoded_token = verify_firebase_token(request)
         uid = decoded_token.get('uid')
 
-        # 2. Statefulness Check: Does this user exist in our MySQL DB?
+        # Strict Statefulness Check
         try:
             # We strictly use .get() here instead of .get_or_create(). 
             # If they hit /profiles/ without calling /sync/ first, we block them.
@@ -50,11 +59,25 @@ class FirebaseAuthentication(BaseAuthentication):
             return (user, decoded_token)
 
         except User.DoesNotExist:
-            raise AuthenticationFailed("User valid in Firebase but not synced to local DB. Call /api/v1/users/sync/ first.")
+            raise AuthenticationFailed("USER_NOT_SYNCED: User valid in Firebase but not in local DB. Call /api/v1/users/sync/ first.")
 
     def authenticate_header(self, request):
-        """
-        This forces DRF to return a 401 Unauthorized instead of a 403 Forbidden 
-        if the token is completely missing.
-        """
+        return 'Bearer'
+
+
+class FirebaseAllowUnsyncedAuthentication(BaseAuthentication):
+    """
+    Permissive DRF Authentication Class ONLY for the onboarding/sync endpoint.
+    Validates the Firebase token, but skips the local MySQL user check so new 
+    users can successfully register their data.
+    """
+    def authenticate(self, request):
+        decoded_token = verify_firebase_token(request)
+        
+        # We deliberately DO NOT check User.objects.get() here.
+        # We return None for the user object, but pass the decoded_token forward 
+        # so your view can extract the UID and create the user in the database.
+        return (None, decoded_token)
+
+    def authenticate_header(self, request):
         return 'Bearer'
