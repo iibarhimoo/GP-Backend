@@ -1,5 +1,8 @@
 import os
 from .base import * 
+import json
+import firebase_admin
+from firebase_admin import credentials
 
 DEBUG = False
 
@@ -17,7 +20,7 @@ DATABASES = {
         "USER": os.environ.get("DB_USER", "gp_admin"),
         "PASSWORD": os.environ.get("DB_PASSWORD"),
         "HOST": os.environ.get("DB_HOST"),
-        "PORT": os.environ.get("DB_PORT", "55310"),
+        "PORT": os.environ.get("DB_PORT", "3306"),
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
@@ -38,3 +41,22 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # 5. TRUSTED ORIGINS (REQUIRED FOR DJANGO 4.0+)
 CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost').split(',')
+
+# Allow FlutterFlow to communicate with the production API
+CORS_ALLOW_ALL_ORIGINS = True
+
+# Initialize Firebase Admin securely from Dokploy Environment Variables
+firebase_creds_json = os.environ.get('FIREBASE_CREDS')
+
+if firebase_creds_json:
+    try:
+        cred_dict = json.loads(firebase_creds_json)
+        cred = credentials.Certificate(cred_dict)
+        
+        # Prevent Django from crashing by trying to initialize Firebase twice
+        if not firebase_admin._apps:
+            firebase_admin.initialize_app(cred)
+    except Exception as e:
+        print(f"CRITICAL: Failed to initialize Firebase: {e}")
+else:
+    print("WARNING: FIREBASE_CREDS environment variable is missing!")
