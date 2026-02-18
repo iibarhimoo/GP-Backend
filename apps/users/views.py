@@ -54,3 +54,15 @@ class UserSyncView(APIView):
             "role": user.role.role_name if user.role else None,
             "created": created
         }, status=status.HTTP_200_OK)
+    
+
+class UserHealthView(APIView):
+    """
+    GET /api/v1/users/health
+    This endpoint is for health checks.
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        return Response({"status": "ok"}, status=status.HTTP_200_OK)

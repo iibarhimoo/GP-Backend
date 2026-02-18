@@ -29,8 +29,16 @@ DATABASES = {
 
 # 3. STATIC FILES
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# The modern way to declare storage backends in Django 5.1+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 # 4. SECURITY & SSL (HTTPS)
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True

@@ -37,3 +37,29 @@ class ProfileCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+
+class ProfileDetailView(generics.RetrieveUpdateAPIView):
+    """
+    GET /api/v1/profiles/<id>
+    PUT /api/v1/profiles/<id>
+    Only the owner can access/modify their profile.
+    """
+    queryset = MedicalProfile.objects.all()
+    serializer_class = MedicalProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Ensure users can only access their own profile
+        return MedicalProfile.objects.filter(user=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(user=self.request.user)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
