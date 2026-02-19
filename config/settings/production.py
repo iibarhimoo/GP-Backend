@@ -9,8 +9,8 @@ DEBUG = False
 # 1. SECURITY: GET KEYS FROM DOKPLOY ENVIRONMENT
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
-# Defines who can connect to your app (e.g., 'api.yourdomain.com')
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+# Defines who can connect to your app
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'hypertrack.duckdns.org, localhost, 127.0.0.1').split(',')
 
 # 2. DATABASE: CONNECT TO YOUR DOKPLOY MYSQL
 DATABASES = {
