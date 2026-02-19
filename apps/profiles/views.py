@@ -1,20 +1,29 @@
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.response import Response
-from rest_framework import generics, permissions
+from rest_framework.views import APIView
 from .models import MedicalProfile
 from .serializers import MedicalProfileSerializer
 
-class ProfileCreateView(generics.CreateAPIView):
+class MyProfileManageView(APIView):
     """
-    POST /api/v1/profiles
-    Auto-assigns the authenticated user.
+    GET /api/v1/profiles/me/  -> Fetch my profile
+    POST /api/v1/profiles/me/ -> Create my profile
+    PUT /api/v1/profiles/me/  -> Update my profile
     """
-    queryset = MedicalProfile.objects.all()
-    serializer_class = MedicalProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def create(self, request, *args, **kwargs):
-        # 🛑 THE FIX: Check if a profile already exists for this user!
+    def get(self, request):
+        try:
+            profile = MedicalProfile.objects.get(user=request.user)
+            serializer = MedicalProfileSerializer(profile)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except MedicalProfile.DoesNotExist:
+            return Response(
+                {"error": "PROFILE_NOT_FOUND: No profile exists for this user."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    def post(self, request):
         if MedicalProfile.objects.filter(user=request.user).exists():
             return Response(
                 {"error": "PROFILE_EXISTS: A medical profile has already been created for this user."}, 
@@ -24,42 +33,29 @@ class ProfileCreateView(generics.CreateAPIView):
         print("--- INCOMING FLUTTERFLOW DATA ---")
         print(request.data)
         
-        serializer = self.get_serializer(data=request.data)
+        serializer = MedicalProfileSerializer(data=request.data)
         
         if not serializer.is_valid():
             print("--- SERIALIZER REJECTED THE DATA! ---")
             print("EXACT ERRORS:", serializer.errors) 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        serializer.save(user=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+    def put(self, request):
+        try:
+            profile = MedicalProfile.objects.get(user=request.user)
+        except MedicalProfile.DoesNotExist:
+            return Response(
+                {"error": "PROFILE_NOT_FOUND: Cannot update a profile that does not exist."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-
-class ProfileDetailView(generics.RetrieveUpdateAPIView):
-    """
-    GET /api/v1/profiles/<id>
-    PUT /api/v1/profiles/<id>
-    Only the owner can access/modify their profile.
-    """
-    queryset = MedicalProfile.objects.all()
-    serializer_class = MedicalProfileSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        # Ensure users can only access their own profile
-        return MedicalProfile.objects.filter(user=self.request.user)
-
-    def perform_update(self, serializer):
-        serializer.save(user=self.request.user)
-
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response(serializer.data)
+        # 'partial=True' allows FlutterFlow to update just one or two fields at a time
+        serializer = MedicalProfileSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

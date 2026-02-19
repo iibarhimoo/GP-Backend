@@ -36,7 +36,7 @@ class UserSyncView(APIView):
         uid = decoded_token.get('uid')
         email = decoded_token.get('email', '')
 
-        # Syncing Firebase UID with local MySQL record
+        # Syncing Firebase UID with a MySQL record
         user, created = User.objects.get_or_create(
             username=uid, 
             defaults={'email': email, 'is_active': True}

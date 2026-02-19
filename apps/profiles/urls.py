@@ -1,6 +1,7 @@
 from django.urls import path
-from .views import ProfileCreateView
+from .views import MyProfileManageView
 
 urlpatterns = [
-    path('', ProfileCreateView.as_view(), name='profile-create'),
+    # GET, POST, or PUT to /api/v1/profiles/me/
+    path('me/', MyProfileManageView.as_view(), name='medical-profile-manage'),
 ]
