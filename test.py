@@ -3,7 +3,7 @@ import json
 
 # CONFIGURATION
 API_KEY = "AIzaSyDnkjCfaVMgJxEEwocjlKEUbpekkpTEJHM"  # Replace with your Firebase Web API Key
-TEST_EMAIL = "test@example.com"
+TEST_EMAIL = "test@test.com"
 TEST_PASSWORD = "password123"
 
 def get_id_token():

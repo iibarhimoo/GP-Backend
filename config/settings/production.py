@@ -48,7 +48,7 @@ CSRF_COOKIE_SECURE = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # 5. TRUSTED ORIGINS (REQUIRED FOR DJANGO 4.0+)
-CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS','https://gp-backend.hypetrack.dev', 'http://localhost').split(',')
+CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS','https://gp-backend.hypetrack.dev,http://localhost').split(',')
 
 # Allow FlutterFlow to communicate with the production API
 CORS_ALLOW_ALL_ORIGINS = True
