@@ -10,7 +10,7 @@ DEBUG = False
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # Defines who can connect to your app
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'hypertrack.duckdns.org').split(',')
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'gp-backend.hypetrack.dev').split(',')
 
 # 2. DATABASE: CONNECT TO YOUR DOKPLOY MYSQL
 DATABASES = {
@@ -48,7 +48,7 @@ CSRF_COOKIE_SECURE = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # 5. TRUSTED ORIGINS (REQUIRED FOR DJANGO 4.0+)
-CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost').split(',')
+CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS','https://gp-backend.hypetrack.dev', 'http://localhost').split(',')
 
 # Allow FlutterFlow to communicate with the production API
 CORS_ALLOW_ALL_ORIGINS = True
