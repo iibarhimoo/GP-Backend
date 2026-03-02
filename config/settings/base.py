@@ -17,7 +17,7 @@ INSTALLED_APPS = [
     # Third Party
     'rest_framework',
     'corsheaders',
-    'drf-spectacular',
+    'drf_spectacular',
 
     # Local Apps
     'apps.users.apps.UsersConfig',
