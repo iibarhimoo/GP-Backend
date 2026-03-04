@@ -35,11 +35,12 @@ class UserSyncView(APIView):
             
         uid = decoded_token.get('uid')
         email = decoded_token.get('email', '')
+        phone_number = decoded_token.get('phone_number', '')
 
         # Syncing Firebase UID with a MySQL record
         user, created = User.objects.get_or_create(
             username=uid, 
-            defaults={'email': email, 'is_active': True}
+            defaults={'email': email, 'phone_number': phone_number, 'is_active': True}
         )
 
         # Assign default role to new users
