@@ -14,7 +14,7 @@ class StaticAPIKeyAuthentication(BaseAuthentication):
 
         # Extract the token (handles "Bearer <token>" or just "<token>")
         token = auth_header.replace("Bearer ", "").strip()
-        
+        print(f"--- INCOMING TOKEN SEEN BY DJANGO '{token}' ---") # Debug print to confirm token reception
         # 1. N8N Service Account (Amer)
         if token == os.environ.get('N8N_MASTER_TOKEN', 'amer_local_test_key'):
             # Get or create a dummy user for the server pipeline
