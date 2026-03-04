@@ -1,6 +1,6 @@
 import os
 from rest_framework.authentication import BaseAuthentication
-from rest_framework import AuthenticationFailed
+from rest_framework.exceptions import AuthenticationFailed
 from django.contrib.auth.models import User
 
 class StaticAPIKeyAuthentication(BaseAuthentication):
