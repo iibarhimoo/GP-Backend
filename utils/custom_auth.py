@@ -3,7 +3,6 @@ from rest_framework.authentication import BaseAuthentication, get_authorization_
 from rest_framework.exceptions import AuthenticationFailed
 from django.contrib.auth import get_user_model
 
-# This dynamically loads your custom users.User model!
 User = get_user_model()
 
 class StaticAPIKeyAuthentication(BaseAuthentication):
@@ -22,18 +21,26 @@ class StaticAPIKeyAuthentication(BaseAuthentication):
                 raise AuthenticationFailed(
                     f"DEBUG MATCH FAILED! "
                     f"Django Expected: '{expected_n8n_token}' (Length: {len(expected_n8n_token)}) | "
-                    f"Amer Sent: '{token}' (Length: {len(token)})"
+                    f"Received: '{token}' (Length: {len(token)})"
                 )
 
         # 1. N8N Service Account (Amer)
         if token == expected_n8n_token:
-            user, _ = User.objects.get_or_create(username="n8n_service_account")
+            # ADDED: A unique fake email to satisfy MySQL
+            user, _ = User.objects.get_or_create(
+                username="n8n_service_account",
+                defaults={"email": "n8n@local.test"}
+            )
             user.is_staff = True 
             return (user, "StaticToken")
 
         # 2. Eyad Test Account
         if token == expected_eyad_token:
-            user, _ = User.objects.get_or_create(username="S10") 
+            # ADDED: A unique fake email to satisfy MySQL
+            user, _ = User.objects.get_or_create(
+                username="S10",
+                defaults={"email": "s10@local.test"}
+            )
             user.is_staff = False
             return (user, "StaticToken")
 
