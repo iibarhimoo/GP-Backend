@@ -6,4 +6,5 @@ urlpatterns = [
     path('live/<str:user_id>/', views.LiveVitalsView.as_view(), name='vitals-live'),
     path('risk-results/', views.RiskResultIngestionView.as_view(), name='risk-results-ingest'),
     path('risk-results/<str:user_id>/', views.RiskSummaryView.as_view(), name='risk-results-summary'),
+    path('risk-events/', views.AllRiskEventsView.as_view(), name='all-risk-events'),
 ]

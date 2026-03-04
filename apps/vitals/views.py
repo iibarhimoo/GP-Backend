@@ -25,7 +25,7 @@ class VitalsIngestionView(APIView):
                 return Response({"error": "Missing user_id in payload"}, status=status.HTTP_400_BAD_REQUEST)
                 
             # Security: Prevent a user from sending vitals for someone else
-            if request.user.username != user_id:
+            if request.user.username != user_id and not request.user.is_staff:
                 return Response({"error": "Unauthorized data submission"}, status=status.HTTP_403_FORBIDDEN)
         
         for record in records:
@@ -86,7 +86,7 @@ class RiskResultIngestionView(APIView):
 
         for record in valid_records:
             # Security: Ensure Firebase UID matches
-            if request.user.username != record['user_id']:
+            if request.user.username != record['user_id'] and not request.user.is_staff:
                 return Response({"error": "Unauthorized data submission"}, status=status.HTTP_403_FORBIDDEN)
 
             record['server_received_at'] = datetime.now(timezone.utc)
@@ -117,7 +117,7 @@ class RiskSummaryView(APIView):
 
     def get(self, request, user_id):
         # Security: Prevent a user from fetching someone else's history
-        if request.user.username != user_id:
+        if request.user.username != user_id and not request.user.is_staff:
              return Response({"error": "Unauthorized data access"}, status=status.HTTP_403_FORBIDDEN)
 
         db = get_mongo_db()
@@ -134,6 +134,30 @@ class RiskSummaryView(APIView):
             return Response({"message": "No risk history found"}, status=status.HTTP_404_NOT_FOUND)
             
         # Fix the MongoDB ID serialization issue
+        for res in results:
+            res['_id'] = str(res['_id'])
+            
+        return Response(results, status=status.HTTP_200_OK)
+    
+
+class AllRiskEventsView(APIView):
+    """
+    GET /api/v1/vitals/risk-events/
+    Fetches the latest risk events across ALL users for Eyad's Streamlit Dashboard.
+    """
+    permission_classes = [IsAuthenticated] 
+
+    def get(self, request):
+        db = get_mongo_db()
+        
+        # Fetch the 50 most recent events across the entire system
+        cursor = db.risk_results.find(
+            {}, 
+            sort=[("server_received_at", -1)] 
+        ).limit(50)
+        
+        results = list(cursor)
+        
         for res in results:
             res['_id'] = str(res['_id'])
             
