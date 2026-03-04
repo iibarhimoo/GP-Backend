@@ -63,8 +63,8 @@ AUTH_USER_MODEL = 'users.User'
 # DRF Configuration
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'apps.users.authentication.FirebaseAuthentication',
         'utils.custom_auth.StaticAPIKeyAuthentication',
+        'apps.users.authentication.FirebaseAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
