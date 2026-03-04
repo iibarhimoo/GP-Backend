@@ -40,24 +40,34 @@ class VitalsIngestionView(APIView):
 
 
 class LiveVitalsView(APIView):
-    """GET /api/v1/vitals/live/{user_id}/ -> Mobile App polls this"""
+    """GET /api/v1/vitals/live/{user_id}/?limit=30 -> Mobile App polls this
+       Returns an array of recent vitals to power the FlutterFlow's Live Data and Trends charts."""
     permission_classes = [IsAuthenticated]
 
     def get(self, request, user_id):
         if request.user.username != user_id:
              return Response({"error": "Unauthorized data access"}, status=status.HTTP_403_FORBIDDEN)
 
+        try: 
+            limit = int(request.query_params.get('limit', 1))
+        except ValueError:
+            limit = 1
+
         db = get_mongo_db()
         
+        cursor = db.risk_results.find(
+            {"user_id": user_id}, 
+            sort=[("server_received_at", -1)]
+        ).limit(limit)
+
+        results = list(cursor)
         latest_vital = db.vitals.find_one(
             {"user_id": user_id}, 
             sort=[("received_at", -1)] 
-        )
+        ).limit(limit)
         
-        if not latest_vital:
-            return Response({"error": "No vitals found for this user"}, status=status.HTTP_404_NOT_FOUND)
-            
-        latest_vital['_id'] = str(latest_vital['_id'])
+        for res in results:
+            res['_id'] = str(res['_id'])
         return Response(latest_vital, status=status.HTTP_200_OK)
     
 

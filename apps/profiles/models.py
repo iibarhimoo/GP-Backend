@@ -14,6 +14,7 @@ class MedicalProfile(models.Model):
     ]
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, null=True, blank=True)
     dob = models.DateField(verbose_name="Date of Birth", null=True, blank=True)
+    fcm_token = models.CharField(max_length=255, blank=True, null=True, help_text="Firebase Device Token for Push Notifications")
 
     # --- REGISTRATION STEP 1 ---
     chronic_diseases = models.TextField(help_text="Step 1: Chronic Diseases", blank=True, null=True)
