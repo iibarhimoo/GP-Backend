@@ -21,12 +21,14 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # Maps to /api/v1/users/sync
+    
+    # Original User & Profile endpoints
     path('api/v1/users/', include('apps.users.urls')),
-    # Maps to /api/v1/profiles
     path('api/v1/profiles/', include('apps.profiles.urls')),
-    # Maps to /api/v1/vitals
-    path('api/v1/vitals/', include('apps.vitals.urls')),
+    
+    # NEW: All Vitals, Risk, and Summary endpoints now branch cleanly off /api/
+    path('api/', include('apps.vitals.urls')),
+    
     # API Schema and Docs
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),

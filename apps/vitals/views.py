@@ -40,8 +40,10 @@ class VitalsIngestionView(APIView):
 
 
 class LiveVitalsView(APIView):
-    """GET /api/v1/vitals/live/{user_id}/?limit=30 -> Mobile App polls this
-       Returns an array of recent vitals to power the FlutterFlow's Live Data and Trends charts."""
+    """
+    GET /api/live-vitals/{user_id}/?limit=30
+    Returns an array of recent vitals to power the FlutterFlow's Live Data and Trends charts.
+    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, user_id):
@@ -61,19 +63,16 @@ class LiveVitalsView(APIView):
         ).limit(limit)
 
         results = list(cursor)
-        latest_vital = db.vitals.find_one(
-            {"user_id": user_id}, 
-            sort=[("received_at", -1)] 
-        ).limit(limit)
         
+        # Format the Mongo IDs and return the array for the FlutterFlow graphs!
         for res in results:
             res['_id'] = str(res['_id'])
-        return Response(latest_vital, status=status.HTTP_200_OK)
-    
+            
+        return Response(results, status=status.HTTP_200_OK)  
 
 class RiskResultIngestionView(APIView):
     """
-    POST /api/v1/vitals/risk-results/
+    POST /api/v1/risk-results/
     Handles the 27-feature WESAD dataset payloads from the n8n pipeline.
     """
     permission_classes = [IsAuthenticated]
@@ -120,7 +119,7 @@ class RiskResultIngestionView(APIView):
 
 class RiskSummaryView(APIView):
     """
-    GET /api/v1/vitals/risk-results/{user_id}/
+    GET /api/v1/summary/{user_id}/
     Fetches the historical risk results so Khaled can display them on mobile charts.
     """
     permission_classes = [IsAuthenticated]
@@ -152,12 +151,12 @@ class RiskSummaryView(APIView):
 
 class AllRiskEventsView(APIView):
     """
-    GET /api/v1/vitals/risk-events/
+    GET /api/risk-events/
     Fetches the latest risk events across ALL users for Eyad's Streamlit Dashboard.
     """
     permission_classes = [IsAuthenticated] 
 
-    def get(self, request):
+    def get(self, request): 
         db = get_mongo_db()
         
         # Fetch the 50 most recent events across the entire system
@@ -171,8 +170,7 @@ class AllRiskEventsView(APIView):
         for res in results:
             res['_id'] = str(res['_id'])
             
-        return Response(results, status=status.HTTP_200_OK)
-    
+        return Response(results, status=status.HTTP_200_OK) 
 class MobileDashboardView(APIView):
     """
     GET /api/v1/vitals/dashboard/{user_id}/
