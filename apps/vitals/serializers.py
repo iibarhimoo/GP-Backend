@@ -41,8 +41,8 @@ class RiskResultSerializer(serializers.Serializer):
     timestamp = serializers.DateTimeField()
     features = WESADFeaturesSerializer() 
     risk_level = serializers.CharField(max_length=20)
-    
-    # --- ADD THESE FOR AMER'S AI OUTPUT ---
+      
+      
     confidence = serializers.FloatField(required=False)
     summary = serializers.CharField(required=False, allow_blank=True)
     recommendation = serializers.CharField(required=False, allow_blank=True)
