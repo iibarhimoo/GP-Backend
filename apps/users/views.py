@@ -32,7 +32,7 @@ class UserSyncView(APIView):
         email = decoded_token.get('email', request.data.get('email', ''))
         phone_number = decoded_token.get('phone_number', '')
 
-        # THE FIX: Safely extract names from the JSON body
+        # Safely extract names from the JSON body
         display_name = request.data.get('display_name', 'Unknown User')
         name_parts = display_name.split(' ', 1)
         first_name = name_parts[0]
@@ -70,3 +70,15 @@ class UserSyncView(APIView):
         except Exception as e:
             # If the database ever crashes again, it will now tell you EXACTLY why instead of a silent 500
             return Response({"error": f"Database Sync Failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class UserHealthView(APIView):
+    """
+    GET /api/v1/users/health
+    This endpoint is for health checks.
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        return Response({"status": "ok"}, status=status.HTTP_200_OK)
