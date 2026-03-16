@@ -70,11 +70,13 @@ class MedicalProfile(models.Model):
     s8_additional_notes = models.TextField(help_text="Step 8: Additional Notes", blank=True, null=True)
 
     # --- REGISTRATION STEP 9 ---
+    last_dental_checkup = models.DateField(help_text="Step 9: Last Dental Checkup", blank=True, null=True)
     last_general_checkup = models.DateField(help_text="Step 9: Last General Checkup", blank=True, null=True)
     last_blood_test = models.DateField(help_text="Step 9: Last Blood Test", blank=True, null=True)
     last_eye_examination = models.DateField(help_text="Step 9: Last Eye Examination", blank=True, null=True)
     doctors_notes = models.TextField(help_text="Step 9: Doctor's Notes or Recommendations", blank=True, null=True)
     s9_additional_notes = models.TextField(help_text="Step 9: Additional Notes", blank=True, null=True)
+    clincian_access = models.BooleanField(default=False, help_text="Allow health reports to be shared securely with a clinician")
     
     def __str__(self):
         return f"Profile: {self.user.username}"
