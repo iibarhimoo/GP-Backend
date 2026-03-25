@@ -48,6 +48,7 @@ class MedicalProfile(models.Model):
     s5_additional_notes = models.TextField(help_text="Step 5: Additional Notes", blank=True, null=True)
 
     # --- REGISTRATION STEP 6 ---
+    overall_health_evaluation = models.CharField(max_length=100, help_text="Step 6: Overall Health Evaluation", blank=True, null=True)
     current_symptoms = models.TextField(help_text="Step 6: Current Symptoms", blank=True, null=True)
     daily_energy_level = models.CharField(max_length=100, help_text="Step 6: Daily Energy Level", blank=True, null=True)
     sleep_quality = models.CharField(max_length=100, help_text="Step 6: Sleep Quality", blank=True, null=True)

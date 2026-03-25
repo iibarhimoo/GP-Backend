@@ -12,4 +12,8 @@ DATABASES = {
     }
 }
 
+# MongoDB Configuration for Development
+MONGO_URI = 'mongodb://localhost:27017/'
+MONGO_DB_NAME = 'gp-mongodb-service-dev'
+
 CORS_ALLOW_ALL_ORIGINS = True

@@ -27,7 +27,7 @@ class MedicalProfileAdmin(admin.ModelAdmin):
             'fields': ('physical_activity_level', 'diet_type', 'average_sleep_hours', 'smoking_habits', 's5_additional_notes')
         }),
         ('Step 6: Current State', {
-            'fields': ('current_symptoms', 'daily_energy_level', 'sleep_quality', 'physical_limitations', 's6_additional_notes')
+            'fields': ('overall_health_evaluation', 'current_symptoms', 'daily_energy_level', 'sleep_quality', 'physical_limitations', 's6_additional_notes')
         }),
         ('Step 7: Mental Health', {
             'fields': ('general_mood', 'stress_level', 'emotional_support', 'psychological_consultations', 's7_additional_notes')
