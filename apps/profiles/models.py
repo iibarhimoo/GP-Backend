@@ -14,6 +14,7 @@ class MedicalProfile(models.Model):
     ]
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, null=True, blank=True)
     dob = models.DateField(verbose_name="Date of Birth", null=True, blank=True)
+    fcm_token = models.CharField(max_length=255, blank=True, null=True, help_text="Firebase Device Token for Push Notifications")
 
     # --- REGISTRATION STEP 1 ---
     chronic_diseases = models.TextField(help_text="Step 1: Chronic Diseases", blank=True, null=True)
@@ -70,11 +71,13 @@ class MedicalProfile(models.Model):
     s8_additional_notes = models.TextField(help_text="Step 8: Additional Notes", blank=True, null=True)
 
     # --- REGISTRATION STEP 9 ---
+    last_dental_checkup = models.DateField(help_text="Step 9: Last Dental Checkup", blank=True, null=True)
     last_general_checkup = models.DateField(help_text="Step 9: Last General Checkup", blank=True, null=True)
     last_blood_test = models.DateField(help_text="Step 9: Last Blood Test", blank=True, null=True)
     last_eye_examination = models.DateField(help_text="Step 9: Last Eye Examination", blank=True, null=True)
     doctors_notes = models.TextField(help_text="Step 9: Doctor's Notes or Recommendations", blank=True, null=True)
     s9_additional_notes = models.TextField(help_text="Step 9: Additional Notes", blank=True, null=True)
-
+    clinician_access = models.BooleanField(default=False, help_text="Allow health reports to be shared securely with a clinician")
+    
     def __str__(self):
         return f"Profile: {self.user.username}"

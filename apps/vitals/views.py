@@ -2,10 +2,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from firebase_admin import messaging
+from apps.profiles.models import MedicalProfile
 from utils.mongo_client import get_mongo_db
-from datetime import datetime, timezone
-
-# Import the schema validator we just created
+from datetime import datetime, timezone, timedelta
+# Serializer for validating incoming risk result data
 from .serializers import RiskResultSerializer
 
 class VitalsIngestionView(APIView):
@@ -40,30 +41,39 @@ class VitalsIngestionView(APIView):
 
 
 class LiveVitalsView(APIView):
-    """GET /api/v1/vitals/live/{user_id}/ -> Mobile App polls this"""
+    """
+    GET /api/live-vitals/{user_id}/?limit=30
+    Returns an array of recent vitals to power the FlutterFlow's Live Data and Trends charts.
+    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, user_id):
         if request.user.username != user_id:
              return Response({"error": "Unauthorized data access"}, status=status.HTTP_403_FORBIDDEN)
 
+        try: 
+            limit = int(request.query_params.get('limit', 1))
+        except ValueError:
+            limit = 1
+
         db = get_mongo_db()
         
-        latest_vital = db.vitals.find_one(
+        cursor = db.risk_results.find(
             {"user_id": user_id}, 
-            sort=[("received_at", -1)] 
-        )
+            sort=[("server_received_at", -1)]
+        ).limit(limit)
+
+        results = list(cursor)
         
-        if not latest_vital:
-            return Response({"error": "No vitals found for this user"}, status=status.HTTP_404_NOT_FOUND)
+        # Format the Mongo IDs and return the array for the FlutterFlow graphs!
+        for res in results:
+            res['_id'] = str(res['_id'])
             
-        latest_vital['_id'] = str(latest_vital['_id'])
-        return Response(latest_vital, status=status.HTTP_200_OK)
-    
+        return Response(results, status=status.HTTP_200_OK)  
 
 class RiskResultIngestionView(APIView):
     """
-    POST /api/v1/vitals/risk-results/
+    POST /api/v1/risk-results/
     Handles the 27-feature WESAD dataset payloads from the n8n pipeline.
     """
     permission_classes = [IsAuthenticated]
@@ -100,6 +110,25 @@ class RiskResultIngestionView(APIView):
             if risk_level in ["High", "Critical"]:
                 alerts_triggered += 1
 
+                try:
+                    profile = MedicalProfile.objects.get(user__username=record['user_id'])
+                    if profile.fcm_token:
+                        message = messaging.Message(
+                            notification=messaging.Notification(
+                                title=f"Health Alert: {risk_level} Stress Alert Detected",
+                                body=f"Your recent vitals indicate a {risk_level.lower()} physiological stress. Please check the app for your AI summary."
+                            ),
+                            token=profile.fcm_token,
+                        )
+                        response = messaging.send(message)
+                        print(f"Successfully sent alert to {record['user_id']} with FCM token {response}")
+                    else:
+                        print(f"No FCM token found for user {record['user_id']}. Cannot send alert.")
+                except MedicalProfile.DoesNotExist:
+                    print(f"No medical profile found for user {record['user_id']}. Cannot send alert.")
+                except Exception as e:
+                    print(f"Firebase Push Failed: {str(e)}")
+
         return Response({
             "status": "success",
             "records_processed": len(inserted_ids),
@@ -110,7 +139,7 @@ class RiskResultIngestionView(APIView):
 
 class RiskSummaryView(APIView):
     """
-    GET /api/v1/vitals/risk-results/{user_id}/
+    GET /api/v1/summary/{user_id}/
     Fetches the historical risk results so Khaled can display them on mobile charts.
     """
     permission_classes = [IsAuthenticated]
@@ -142,12 +171,12 @@ class RiskSummaryView(APIView):
 
 class AllRiskEventsView(APIView):
     """
-    GET /api/v1/vitals/risk-events/
+    GET /api/risk-events/
     Fetches the latest risk events across ALL users for Eyad's Streamlit Dashboard.
     """
     permission_classes = [IsAuthenticated] 
 
-    def get(self, request):
+    def get(self, request): 
         db = get_mongo_db()
         
         # Fetch the 50 most recent events across the entire system
@@ -161,8 +190,8 @@ class AllRiskEventsView(APIView):
         for res in results:
             res['_id'] = str(res['_id'])
             
-        return Response(results, status=status.HTTP_200_OK)
-    
+        return Response(results, status=status.HTTP_200_OK) 
+
 class MobileDashboardView(APIView):
     """
     GET /api/v1/vitals/dashboard/{user_id}/
@@ -212,3 +241,136 @@ class MobileDashboardView(APIView):
         }
 
         return Response(dashboard_data, status=status.HTTP_200_OK)
+
+
+# -------------------------------------------------------------------
+#  DEVICE MANAGEMENT API
+# -------------------------------------------------------------------
+class DeviceStatusView(APIView):
+    """ GET /api/devices/status/{user_id}/ """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, user_id):
+        if request.user.username != user_id:
+             return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+             
+        # Currently mocked for Khaled's UI. Later, Amer can POST actual battery life to the DB.
+        return Response({
+            "device_name": "EmotiBit Sensor",
+            "battery_level": 75,
+            "status": "Connected"
+        }, status=status.HTTP_200_OK)
+
+
+# -------------------------------------------------------------------
+#  CHAT AGENT API
+# -------------------------------------------------------------------
+class SupportChatView(APIView):
+    """ POST /api/support/chat/ """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user_message = request.data.get("message", "").lower()
+        
+        # Smart Mock Agent for Khaled's UI testing
+        reply = "I'm sorry, I didn't quite catch that. Could you provide more details?"
+        if "order" in user_message or "tracking" in user_message:
+            reply = "I'm sorry to hear your order is delayed! Let me look into that right away. Could you please share your order number?"
+        elif "stress" in user_message or "heart" in user_message:
+            reply = "I can help with your vitals. Make sure your EmotiBit sensor is connected and firmly placed on your wrist."
+
+        return Response({"reply": reply}, status=status.HTTP_200_OK)
+
+
+# -------------------------------------------------------------------
+#  DAILY ANALYTICS API (Reports Dashboard)
+# -------------------------------------------------------------------
+class DailyAnalyticsView(APIView):
+    """ GET /api/analytics/daily/{user_id}/?date=YYYY-MM-DD """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, user_id):
+        if request.user.username != user_id:
+             return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+
+        target_date_str = request.query_params.get('date', datetime.now(timezone.utc).strftime('%Y-%m-%d'))
+        db = get_mongo_db()
+        
+        # Search MongoDB for any records containing this exact date string in the timestamp
+        cursor = db.risk_results.find({
+            "user_id": user_id,
+            "timestamp": {"$regex": f"^{target_date_str}"}
+        })
+        results = list(cursor)
+
+        if not results:
+             return Response({
+                 "date": target_date_str,
+                 "avg_hr": 0, "stress_level": "No Data", "activity_level": "No Data",
+                 "summary": "No vitals recorded for this date."
+             }, status=status.HTTP_200_OK)
+
+        # Calculate averages for the day
+        total_hr = sum(r.get('features', {}).get('hr_mean', 0) for r in results)
+        avg_hr = int(total_hr / len(results))
+        
+        # Get the most common risk level for the day
+        risk_levels = [r.get('risk_level', 'Low') for r in results]
+        predominant_risk = max(set(risk_levels), key=risk_levels.count)
+
+        return Response({
+            "date": target_date_str,
+            "avg_hr": avg_hr,
+            "stress_level": predominant_risk,
+            "activity_level": "Active" if avg_hr > 80 else "Normal",
+            "summary": f"Your vitals were generally stable today with a predominant stress level of {predominant_risk}."
+        }, status=status.HTTP_200_OK)
+
+
+# -------------------------------------------------------------------
+#  WEEKLY TRENDS API (Charts & Graphs)
+# -------------------------------------------------------------------
+class WeeklyAnalyticsView(APIView):
+    """ GET /api/analytics/weekly/{user_id}/ """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, user_id):
+        if request.user.username != user_id:
+             return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+
+        db = get_mongo_db()
+        seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+        
+        # Get all records from the last 7 days
+        cursor = db.risk_results.find({
+            "user_id": user_id,
+            "server_received_at": {"$gte": seven_days_ago}
+        })
+        results = list(cursor)
+
+        # 1. Bar Chart Data (Events per day of the week)
+        events_per_day = {"Mon": 0, "Tue": 0, "Wed": 0, "Thu": 0, "Fri": 0, "Sat": 0, "Sun": 0}
+        
+        # 2. Pie Chart Data (Count trigger types based on risk_level)
+        triggers = {"Class Stress": 0, "Low Movement": 0, "Other": 0}
+
+        for r in results:
+            # Map the timestamp to a day of the week
+            if 'server_received_at' in r:
+                day_name = r['server_received_at'].strftime('%a') # Returns 'Mon', 'Tue', etc.
+                if day_name in events_per_day:
+                    events_per_day[day_name] += 1
+            
+            # Simple grouping logic for the Pie Chart based on AI risk levels
+            risk = r.get("risk_level", "Low")
+            if risk == "Critical":
+                triggers["Class Stress"] += 1
+            elif risk == "High":
+                triggers["Low Movement"] += 1
+            else:
+                triggers["Other"] += 1
+
+        return Response({
+            "bar_chart_data": events_per_day,
+            "pie_chart_data": triggers
+        }, status=status.HTTP_200_OK)
